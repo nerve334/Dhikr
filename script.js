@@ -40,7 +40,6 @@ const el = {
   setsChip:   document.querySelector('.js-sets-chip'),
   phaseVal:   document.querySelector('.js-phase-val'),
   remaining:  document.querySelector('.js-remaining'),
-  setsVal:    document.querySelector('.js-sets-val'),
   pctLine:    document.querySelector('.js-pct-line'),
   togoLine:   document.querySelector('.js-togo-line'),
   fill:       document.querySelector('.js-fill'),
@@ -94,7 +93,6 @@ function render({ pop = false, celebrate = false, entering = false } = {}) {
 
   if (el.phaseVal)  el.phaseVal.textContent  = `${phaseNum} / ${DHIKRS.length}`;
   if (el.remaining) el.remaining.textContent = remaining;
-  if (el.setsVal)   el.setsVal.textContent   = state.setsCompleted;
 
   el.pctLine.textContent  = `${state.count} of ${d.target}`;
   el.togoLine.textContent = `${remaining} to go`;
