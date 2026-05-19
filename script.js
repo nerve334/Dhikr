@@ -1,56 +1,64 @@
-/* =============================================================
-   Dhiker — counter logic + theme + persistence
-   - Goal is editable; on each cycle it loops automatically
-   - Total count never resets at the goal; it keeps climbing
-   - Dark theme is the default for new visitors
-   ============================================================= */
+const DHIKRS = [
+  { name: 'Subhanallah',   target: 33 },
+  { name: 'Alhamdulillah', target: 33 },
+  { name: 'Allahu Akbar',  target: 34 },
+];
 
-const STORAGE_KEY = 'dhiker_v2';
-const DOTS = 30;
+const STORAGE_KEY = 'dhiker_v3';
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 const state = {
-  count: 0,
-  goal: 100,
-  theme: 'dark',
+  dhikrIndex:    0,
+  count:         0,
+  setsCompleted: 0,
+  theme:         'dark',
+  transitioning: false,
 };
 
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) Object.assign(state, JSON.parse(raw));
+    if (raw) {
+      const { dhikrIndex, count, setsCompleted, theme } = JSON.parse(raw);
+      if (dhikrIndex    !== undefined) state.dhikrIndex    = dhikrIndex;
+      if (count         !== undefined) state.count         = count;
+      if (setsCompleted !== undefined) state.setsCompleted = setsCompleted;
+      if (theme         !== undefined) state.theme         = theme;
+    }
   } catch (e) { /* ignore corrupt storage */ }
 }
 
 function save() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  const { dhikrIndex, count, setsCompleted, theme } = state;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ dhikrIndex, count, setsCompleted, theme }));
 }
 
 const el = {
-  counts:      document.querySelectorAll('.js-count'),
-  targets:     document.querySelectorAll('.js-target'),
-  rounds:      document.querySelectorAll('.js-round'),
-  remaining:   document.querySelector('.js-remaining'),
-  pctBig:      document.querySelector('.js-pct-big'),
-  pctLine:     document.querySelector('.js-pct-line'),
-  togoLine:    document.querySelector('.js-togo-line'),
-  fill:        document.querySelector('.js-fill'),
-  dots:        document.querySelector('.js-dots'),
-  session:     document.querySelector('.js-session'),
-  incs:        document.querySelectorAll('.js-inc'),
-  decs:        document.querySelectorAll('.js-dec'),
-  resets:      document.querySelectorAll('.js-reset'),
-  goalEdits:   document.querySelectorAll('.js-goal-edit'),
-  themeOpts:   document.querySelectorAll('[data-theme-set]'),
-  themeIcon:   document.getElementById('themeIcon'),
-  dateChip:    document.getElementById('dateChip'),
+  bignum:     document.querySelector('.js-count'),
+  dhikrLabel: document.querySelector('.js-dhikr-name'),
+  phaseChip:  document.querySelector('.js-phase-chip'),
+  setsChip:   document.querySelector('.js-sets-chip'),
+  phaseVal:   document.querySelector('.js-phase-val'),
+  remaining:  document.querySelector('.js-remaining'),
+  setsVal:    document.querySelector('.js-sets-val'),
+  pctLine:    document.querySelector('.js-pct-line'),
+  togoLine:   document.querySelector('.js-togo-line'),
+  fill:       document.querySelector('.js-fill'),
+  dots:       document.querySelector('.js-dots'),
+  session:    document.querySelector('.js-session'),
+  incs:       document.querySelectorAll('.js-inc'),
+  decs:       document.querySelectorAll('.js-dec'),
+  resets:     document.querySelectorAll('.js-reset'),
+  themeOpts:  document.querySelectorAll('[data-theme-set]'),
+  themeIcon:  document.getElementById('themeIcon'),
+  dateChip:   document.getElementById('dateChip'),
 };
 
 let dotEls = [];
-function buildDots() {
+function buildDots(target) {
   el.dots.innerHTML = '';
   dotEls = [];
-  for (let i = 0; i < DOTS; i++) {
+  for (let i = 0; i < target; i++) {
     const d = document.createElement('span');
     d.className = 'dot';
     el.dots.appendChild(d);
@@ -58,45 +66,41 @@ function buildDots() {
   }
 }
 
-// Cycle math — total count keeps growing, progress wraps each goal.
-function cycleStats() {
-  const g = Math.max(1, state.goal);
-  const n = state.count;
-  const cycleN     = n === 0 ? 0 : ((n - 1) % g) + 1;          // 0..g
-  const round      = n === 0 ? 1 : Math.ceil(n / g);           // 1, 2, 3...
-  const remaining  = Math.max(0, g - cycleN);
-  const pct        = (cycleN / g) * 100;
-  return { cycleN, round, remaining, pct, goal: g };
-}
+function render({ pop = false, celebrate = false, entering = false } = {}) {
+  const d         = DHIKRS[state.dhikrIndex];
+  const remaining = d.target - state.count;
+  const pct       = (state.count / d.target) * 100;
+  const phaseNum  = state.dhikrIndex + 1;
+  const setsText  = state.setsCompleted === 0
+    ? '0 sets'
+    : `${state.setsCompleted} set${state.setsCompleted !== 1 ? 's' : ''}`;
 
-function render({ pop = false, celebrate = false } = {}) {
-  const { cycleN, round, remaining, pct, goal } = cycleStats();
-
-  el.counts.forEach(c => {
-    c.textContent = String(state.count);
-    if (pop) {
-      c.classList.remove('pop');
-      void c.offsetWidth;
-      c.classList.add('pop');
-    }
-    if (celebrate) {
-      c.classList.remove('celebrate');
-      void c.offsetWidth;
-      c.classList.add('celebrate');
-    }
-  });
-  el.targets.forEach(t => (t.textContent = goal));
-  el.rounds.forEach(r => (r.textContent = round));
-  el.remaining.textContent = remaining;
-  el.pctBig.textContent = `${Math.round(pct)}%`;
-  el.pctLine.textContent = `${Math.round(pct)}% complete`;
-  el.togoLine.textContent = `${remaining} to go`;
-  el.fill.style.width = `${pct}%`;
-
-  const filled = Math.min(DOTS, Math.round((cycleN / goal) * DOTS));
-  for (let i = 0; i < DOTS; i++) {
-    dotEls[i].classList.toggle('is-filled', i < filled);
+  el.dhikrLabel.textContent = d.name;
+  if (entering) {
+    el.dhikrLabel.classList.remove('entering');
+    void el.dhikrLabel.offsetWidth;
+    el.dhikrLabel.classList.add('entering');
   }
+
+  el.phaseChip.textContent = `Step ${phaseNum} of ${DHIKRS.length}`;
+  el.setsChip.textContent  = setsText;
+
+  el.bignum.textContent = String(state.count);
+  if (pop || celebrate) {
+    el.bignum.classList.remove('pop', 'celebrate');
+    void el.bignum.offsetWidth;
+    el.bignum.classList.add(celebrate ? 'celebrate' : 'pop');
+  }
+
+  if (el.phaseVal)  el.phaseVal.textContent  = `${phaseNum} / ${DHIKRS.length}`;
+  if (el.remaining) el.remaining.textContent = remaining;
+  if (el.setsVal)   el.setsVal.textContent   = state.setsCompleted;
+
+  el.pctLine.textContent  = `${state.count} of ${d.target}`;
+  el.togoLine.textContent = `${remaining} to go`;
+  el.fill.style.width     = `${pct}%`;
+
+  dotEls.forEach((dot, i) => dot.classList.toggle('is-filled', i < state.count));
 }
 
 function renderTheme() {
@@ -107,25 +111,44 @@ function renderTheme() {
   if (el.themeIcon) el.themeIcon.textContent = state.theme === 'dark' ? '☾' : '☀';
 }
 
-function inc() {
-  state.count += 1;
-  const justCompletedRound = state.count > 0 && state.count % state.goal === 0;
-  render({ pop: true, celebrate: justCompletedRound });
-  if (navigator.vibrate) navigator.vibrate(justCompletedRound ? [12, 40, 12] : 8);
+function advanceDhikr() {
+  const nextIndex = (state.dhikrIndex + 1) % DHIKRS.length;
+  if (nextIndex === 0) state.setsCompleted++;
+  state.dhikrIndex    = nextIndex;
+  state.count         = 0;
+  state.transitioning = false;
+  buildDots(DHIKRS[nextIndex].target);
+  render({ pop: true, entering: true });
   save();
 }
 
+function inc() {
+  if (state.transitioning) return;
+  state.count++;
+  const done = state.count >= DHIKRS[state.dhikrIndex].target;
+  render({ pop: !done, celebrate: done });
+  if (navigator.vibrate) navigator.vibrate(done ? [12, 50, 20] : 8);
+  save();
+  if (done) {
+    state.transitioning = true;
+    setTimeout(advanceDhikr, 820);
+  }
+}
+
 function dec() {
-  if (state.count === 0) return;
-  state.count -= 1;
+  if (state.transitioning || state.count === 0) return;
+  state.count--;
   render({ pop: true });
   save();
 }
 
 function reset() {
-  if (state.count === 0) return;
-  if (!confirm('Reset the counter to 0?')) return;
-  state.count = 0;
+  if (!confirm('Reset the full sequence to the beginning?')) return;
+  state.dhikrIndex    = 0;
+  state.count         = 0;
+  state.setsCompleted = 0;
+  state.transitioning = false;
+  buildDots(DHIKRS[0].target);
   render({ pop: true });
   save();
 }
@@ -133,19 +156,6 @@ function reset() {
 function setTheme(t) {
   state.theme = t;
   renderTheme();
-  save();
-}
-
-function editGoal() {
-  const input = window.prompt('Set your goal (1–9999):', String(state.goal));
-  if (input === null) return; // cancelled
-  const n = parseInt(input.trim(), 10);
-  if (!Number.isFinite(n) || n < 1 || n > 9999) {
-    alert('Please enter a whole number between 1 and 9999.');
-    return;
-  }
-  state.goal = n;
-  render({ pop: true });
   save();
 }
 
@@ -169,10 +179,9 @@ function startSession() {
 }
 
 function bind() {
-  el.incs.forEach(b => b.addEventListener('click', inc));
-  el.decs.forEach(b => b.addEventListener('click', dec));
+  el.incs.forEach(b   => b.addEventListener('click', inc));
+  el.decs.forEach(b   => b.addEventListener('click', dec));
   el.resets.forEach(b => b.addEventListener('click', reset));
-  el.goalEdits.forEach(g => g.addEventListener('click', editGoal));
 
   el.themeOpts.forEach(o =>
     o.addEventListener('click', () => setTheme(o.dataset.themeSet)));
@@ -192,12 +201,9 @@ function bind() {
       e.preventDefault(); dec();
     } else if (e.key === 'r' || e.key === 'R') {
       reset();
-    } else if (e.key === 'g' || e.key === 'G') {
-      editGoal();
     }
   });
 
-  // Belt-and-suspenders zoom prevention on iOS — block pinch and double-tap zoom.
   document.addEventListener('gesturestart', (e) => e.preventDefault());
   let lastTouch = 0;
   document.addEventListener('touchend', (e) => {
@@ -208,7 +214,7 @@ function bind() {
 }
 
 load();
-buildDots();
+buildDots(DHIKRS[state.dhikrIndex].target);
 renderTheme();
 render();
 setDate();

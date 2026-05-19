@@ -229,26 +229,11 @@ kbd {
 
 .counter-card__head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: clamp(8px, 1.4vh, 14px);
+  margin-bottom: clamp(6px, 1vh, 12px);
   flex-shrink: 0;
-}
-
-.label {
-  font-size: 11px;
-  color: var(--text-dim);
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-}
-
-.head-meta {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
 .round-chip {
@@ -262,30 +247,34 @@ kbd {
   white-space: nowrap;
 }
 
-.goal-text {
+.sets-chip {
   font-size: 11px;
+  font-weight: 500;
   color: var(--text-faint);
-  font-family: 'IBM Plex Mono', monospace;
-  padding: 2px 6px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  transition: background 0.15s, color 0.15s;
+  background: var(--btn-bg);
+  border: 1px solid var(--border);
+  padding: 3px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.2px;
   white-space: nowrap;
 }
-.goal-text:hover, .goal-text:focus-visible {
-  background: var(--accent-soft);
+
+.dhikr-label {
+  font-weight: 600;
+  font-size: clamp(18px, 3.2vh, 28px);
+  letter-spacing: -0.2px;
   color: var(--accent);
-  outline: none;
+  margin-bottom: clamp(2px, 0.6vh, 8px);
+  flex-shrink: 0;
+  user-select: none;
 }
-.goal-text__pencil {
-  font-size: 10px;
-  opacity: 0.6;
-  transition: opacity 0.15s;
+.dhikr-label.entering {
+  animation: dhk-slide-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.goal-text:hover .goal-text__pencil { opacity: 1; }
+@keyframes dhk-slide-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
 
 .bignum {
   font-family: 'IBM Plex Mono', 'SF Mono', ui-monospace, monospace;
@@ -509,9 +498,9 @@ kbd {
     padding: clamp(28px, 4.5vh, 48px) clamp(28px, 4vw, 56px) clamp(24px, 4vh, 40px);
     box-shadow: var(--shadow-card);
   }
-  .counter-card__head { margin-bottom: clamp(6px, 1vh, 12px); }
-  .label, .goal-text { font-size: 13px; }
-  .round-chip { font-size: 12px; }
+  .counter-card__head { margin-bottom: clamp(4px, 0.8vh, 10px); }
+  .round-chip, .sets-chip { font-size: 12px; }
+  .dhikr-label { font-size: clamp(22px, 3.5vh, 32px); }
 
   .bignum {
     font-size: clamp(96px, 18vh, 168px);
