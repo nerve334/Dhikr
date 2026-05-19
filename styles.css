@@ -55,7 +55,7 @@ html, body {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
-  touch-action: pan-x pan-y;
+  touch-action: none;
 }
 
 body {
@@ -212,6 +212,7 @@ kbd {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   overflow: hidden;
 }
 
@@ -438,8 +439,9 @@ kbd {
 
 /* =============== MOBILE CONTROLS (bottom) =============== */
 .mobile-controls-wrap {
-  margin-top: auto;
-  padding-top: clamp(16px, 3vh, 32px);
+  margin-top: 0;
+  padding-top: clamp(12px, 2vh, 24px);
+  padding-bottom: max(clamp(8px, 1.5vh, 16px), env(safe-area-inset-bottom, 0px));
   flex-shrink: 0;
 }
 .mobile-controls {
