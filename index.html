@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <title>Dhiker · counter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#faf8f4" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23b35a30'/%3E%3Ctext x='50%25' y='54%25' text-anchor='middle' dominant-baseline='middle' font-family='IBM Plex Mono,monospace' font-weight='600' font-size='36' fill='white'%3ED%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+  <div class="app">
+
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand__logo">D</div>
+        <span class="brand__name">Dhiker</span>
+        <span class="brand__sub">· counter</span>
+      </div>
+
+      <div class="topbar__right">
+        <div class="date-chip" id="dateChip">—</div>
+
+        <div class="theme-pill" role="tablist" aria-label="Theme">
+          <button class="theme-pill__opt" data-theme-set="light" role="tab">light</button>
+          <button class="theme-pill__opt" data-theme-set="dark"  role="tab">dark</button>
+        </div>
+
+        <button class="theme-icon" id="themeIcon" aria-label="Toggle theme">☀</button>
+      </div>
+    </header>
+
+    <main class="main">
+
+      <section class="counter-card">
+        <div class="counter-card__head">
+          <span class="label">Current count</span>
+          <span class="goal-text">goal · <span class="js-target">100</span></span>
+        </div>
+
+        <div class="bignum js-count" aria-live="polite">000</div>
+
+        <div class="dots js-dots" aria-hidden="true"></div>
+
+        <div class="progress-bar">
+          <div class="progress-bar__bar">
+            <div class="progress-bar__fill js-fill"></div>
+          </div>
+          <div class="progress-bar__labels">
+            <span class="js-pct-line">0% complete</span>
+            <span class="js-togo-line">100 to go</span>
+          </div>
+        </div>
+
+        <div class="counter-card__controls">
+          <button class="reset-pill js-reset">
+            <span class="reset-pill__icon">↺</span> Reset
+          </button>
+          <div class="counter-card__buttons">
+            <button class="icon-btn js-dec" aria-label="Decrement">−</button>
+            <button class="icon-btn icon-btn--accent js-inc" aria-label="Increment">
+              <span class="plus">+</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="stats">
+        <div class="stat-card">
+          <div class="stat-card__label">Progress</div>
+          <div class="stat-card__value js-pct-big">0%</div>
+          <div class="stat-card__sub">of <span class="js-target">100</span> target</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">Remaining</div>
+          <div class="stat-card__value js-remaining">100</div>
+          <div class="stat-card__sub">until goal</div>
+        </div>
+        <div class="hint">
+          Tap <kbd>+</kbd> to count up, <kbd>−</kbd> to count down, and <kbd>↺</kbd> to reset to zero.
+        </div>
+      </aside>
+    </main>
+
+    <div class="mobile-controls-wrap">
+      <div class="mobile-controls">
+        <button class="icon-btn js-dec" aria-label="Decrement">−</button>
+        <button class="icon-btn icon-btn--accent icon-btn--big js-inc" aria-label="Increment">
+          <span class="plus">+</span>
+        </button>
+        <button class="icon-btn js-reset" aria-label="Reset">↺</button>
+      </div>
+      <div class="mobile-labels">
+        <span>Minus</span>
+        <span>Add</span>
+        <span>Reset</span>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <span>v1.0 · local only</span>
+      <span class="session js-session">session · 00:00:00</span>
+    </footer>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
