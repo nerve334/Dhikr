@@ -141,7 +141,6 @@ function dec() {
 }
 
 function reset() {
-  if (!confirm('Reset the full sequence to the beginning?')) return;
   state.dhikrIndex    = 0;
   state.count         = 0;
   state.setsCompleted = 0;
