@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8" />
   <title>Dhiker · counter</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#faf8f4" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#16140f" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -29,7 +29,7 @@
           <button class="theme-pill__opt" data-theme-set="dark"  role="tab">dark</button>
         </div>
 
-        <button class="theme-icon" id="themeIcon" aria-label="Toggle theme">☀</button>
+        <button class="theme-icon" id="themeIcon" aria-label="Toggle theme">☾</button>
       </div>
     </header>
 
@@ -38,10 +38,16 @@
       <section class="counter-card">
         <div class="counter-card__head">
           <span class="label">Current count</span>
-          <span class="goal-text">goal · <span class="js-target">100</span></span>
+          <span class="head-meta">
+            <span class="round-chip">Round <span class="js-round">1</span></span>
+            <button class="goal-text js-goal-edit" type="button" aria-label="Set goal">
+              goal · <span class="js-target">100</span>
+              <span class="goal-text__pencil" aria-hidden="true">✎</span>
+            </button>
+          </span>
         </div>
 
-        <div class="bignum js-count" aria-live="polite">000</div>
+        <div class="bignum js-count" aria-live="polite">0</div>
 
         <div class="dots js-dots" aria-hidden="true"></div>
 
@@ -70,17 +76,18 @@
 
       <aside class="stats">
         <div class="stat-card">
-          <div class="stat-card__label">Progress</div>
+          <div class="stat-card__label">Cycle progress</div>
           <div class="stat-card__value js-pct-big">0%</div>
-          <div class="stat-card__sub">of <span class="js-target">100</span> target</div>
+          <div class="stat-card__sub">of <span class="js-target">100</span> per round</div>
         </div>
         <div class="stat-card">
           <div class="stat-card__label">Remaining</div>
           <div class="stat-card__value js-remaining">100</div>
-          <div class="stat-card__sub">until goal</div>
+          <div class="stat-card__sub">until next round</div>
         </div>
         <div class="hint">
-          Tap <kbd>+</kbd> to count up, <kbd>−</kbd> to count down, and <kbd>↺</kbd> to reset to zero.
+          Tap <kbd>+</kbd> to count up, <kbd>−</kbd> to count down, and <kbd>↺</kbd> to reset.
+          Click <kbd>goal</kbd> to set a target — the counter keeps climbing and the round loops automatically.
         </div>
       </aside>
     </main>

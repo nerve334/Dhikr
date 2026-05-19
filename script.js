@@ -1,15 +1,18 @@
 /* =============================================================
    Dhiker — counter logic + theme + persistence
+   - Goal is editable; on each cycle it loops automatically
+   - Total count never resets at the goal; it keeps climbing
+   - Dark theme is the default for new visitors
    ============================================================= */
 
-const STORAGE_KEY = 'dhiker_v1';
-const TARGET = 100;
+const STORAGE_KEY = 'dhiker_v2';
 const DOTS = 30;
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 const state = {
   count: 0,
-  theme: 'light',
+  goal: 100,
+  theme: 'dark',
 };
 
 function load() {
@@ -17,10 +20,6 @@ function load() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) Object.assign(state, JSON.parse(raw));
   } catch (e) { /* ignore corrupt storage */ }
-  // honor system pref on first visit (no saved value)
-  if (!localStorage.getItem(STORAGE_KEY) && window.matchMedia) {
-    state.theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  }
 }
 
 function save() {
@@ -30,6 +29,7 @@ function save() {
 const el = {
   counts:      document.querySelectorAll('.js-count'),
   targets:     document.querySelectorAll('.js-target'),
+  rounds:      document.querySelectorAll('.js-round'),
   remaining:   document.querySelector('.js-remaining'),
   pctBig:      document.querySelector('.js-pct-big'),
   pctLine:     document.querySelector('.js-pct-line'),
@@ -40,6 +40,7 @@ const el = {
   incs:        document.querySelectorAll('.js-inc'),
   decs:        document.querySelectorAll('.js-dec'),
   resets:      document.querySelectorAll('.js-reset'),
+  goalEdits:   document.querySelectorAll('.js-goal-edit'),
   themeOpts:   document.querySelectorAll('[data-theme-set]'),
   themeIcon:   document.getElementById('themeIcon'),
   dateChip:    document.getElementById('dateChip'),
@@ -57,28 +58,42 @@ function buildDots() {
   }
 }
 
-function render({ pop = false } = {}) {
+// Cycle math — total count keeps growing, progress wraps each goal.
+function cycleStats() {
+  const g = Math.max(1, state.goal);
   const n = state.count;
-  const pct = Math.min(100, (n / TARGET) * 100);
-  const remaining = Math.max(0, TARGET - n);
-  const padded = String(n).padStart(3, '0');
+  const cycleN     = n === 0 ? 0 : ((n - 1) % g) + 1;          // 0..g
+  const round      = n === 0 ? 1 : Math.ceil(n / g);           // 1, 2, 3...
+  const remaining  = Math.max(0, g - cycleN);
+  const pct        = (cycleN / g) * 100;
+  return { cycleN, round, remaining, pct, goal: g };
+}
+
+function render({ pop = false, celebrate = false } = {}) {
+  const { cycleN, round, remaining, pct, goal } = cycleStats();
 
   el.counts.forEach(c => {
-    c.textContent = padded;
+    c.textContent = String(state.count);
     if (pop) {
       c.classList.remove('pop');
-      void c.offsetWidth; // restart animation
+      void c.offsetWidth;
       c.classList.add('pop');
     }
+    if (celebrate) {
+      c.classList.remove('celebrate');
+      void c.offsetWidth;
+      c.classList.add('celebrate');
+    }
   });
-  el.targets.forEach(t => (t.textContent = TARGET));
+  el.targets.forEach(t => (t.textContent = goal));
+  el.rounds.forEach(r => (r.textContent = round));
   el.remaining.textContent = remaining;
-  el.pctBig.textContent = `${pct.toFixed(0)}%`;
-  el.pctLine.textContent = `${pct.toFixed(0)}% complete`;
+  el.pctBig.textContent = `${Math.round(pct)}%`;
+  el.pctLine.textContent = `${Math.round(pct)}% complete`;
   el.togoLine.textContent = `${remaining} to go`;
   el.fill.style.width = `${pct}%`;
 
-  const filled = Math.min(DOTS, Math.round((n / TARGET) * DOTS));
+  const filled = Math.min(DOTS, Math.round((cycleN / goal) * DOTS));
   for (let i = 0; i < DOTS; i++) {
     dotEls[i].classList.toggle('is-filled', i < filled);
   }
@@ -94,8 +109,9 @@ function renderTheme() {
 
 function inc() {
   state.count += 1;
-  render({ pop: true });
-  if (navigator.vibrate) navigator.vibrate(8);
+  const justCompletedRound = state.count > 0 && state.count % state.goal === 0;
+  render({ pop: true, celebrate: justCompletedRound });
+  if (navigator.vibrate) navigator.vibrate(justCompletedRound ? [12, 40, 12] : 8);
   save();
 }
 
@@ -117,6 +133,19 @@ function reset() {
 function setTheme(t) {
   state.theme = t;
   renderTheme();
+  save();
+}
+
+function editGoal() {
+  const input = window.prompt('Set your goal (1–9999):', String(state.goal));
+  if (input === null) return; // cancelled
+  const n = parseInt(input.trim(), 10);
+  if (!Number.isFinite(n) || n < 1 || n > 9999) {
+    alert('Please enter a whole number between 1 and 9999.');
+    return;
+  }
+  state.goal = n;
+  render({ pop: true });
   save();
 }
 
@@ -143,6 +172,7 @@ function bind() {
   el.incs.forEach(b => b.addEventListener('click', inc));
   el.decs.forEach(b => b.addEventListener('click', dec));
   el.resets.forEach(b => b.addEventListener('click', reset));
+  el.goalEdits.forEach(g => g.addEventListener('click', editGoal));
 
   el.themeOpts.forEach(o =>
     o.addEventListener('click', () => setTheme(o.dataset.themeSet)));
@@ -162,8 +192,19 @@ function bind() {
       e.preventDefault(); dec();
     } else if (e.key === 'r' || e.key === 'R') {
       reset();
+    } else if (e.key === 'g' || e.key === 'G') {
+      editGoal();
     }
   });
+
+  // Belt-and-suspenders zoom prevention on iOS — block pinch and double-tap zoom.
+  document.addEventListener('gesturestart', (e) => e.preventDefault());
+  let lastTouch = 0;
+  document.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if (now - lastTouch <= 300) e.preventDefault();
+    lastTouch = now;
+  }, { passive: false });
 }
 
 load();
