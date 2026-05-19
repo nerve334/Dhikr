@@ -1,258 +1,216 @@
 /* =============================================================
-   Dhiker — three-dhikr tasbih sequence
-   Subhanallah ×33 → Alhamdulillah ×33 → Allahu Akbar ×34
-   Click / tap anywhere to count. Auto-advances on completion.
+   Dhiker — counter logic + theme + persistence
+   - Goal is editable; on each cycle it loops automatically
+   - Total count never resets at the goal; it keeps climbing
+   - Dark theme is the default for new visitors
    ============================================================= */
 
-const DHIKRS = [
-  {
-    arabic:  'سُبْحَانَ ٱللَّهِ',
-    name:    'Subhanallah',
-    meaning: 'Glory be to Allah',
-    target:  33,
-  },
-  {
-    arabic:  'ٱلْحَمْدُ لِلَّهِ',
-    name:    'Alhamdulillah',
-    meaning: 'All praise is due to Allah',
-    target:  33,
-  },
-  {
-    arabic:  'ٱللَّهُ أَكْبَرُ',
-    name:    'Allahu Akbar',
-    meaning: 'Allah is the Greatest',
-    target:  34,
-  },
-];
-
-const STORAGE_KEY = 'dhiker_v4';
+const STORAGE_KEY = 'dhiker_v2';
+const DOTS = 30;
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 const state = {
-  dhikrIndex:    0,
-  count:         0,
-  setsCompleted: 0,
-  theme:         'dark',
-  transitioning: false,
+  count: 0,
+  goal: 100,
+  theme: 'dark',
 };
 
-// ── Persistence ────────────────────────────────────────────
-function save() {
-  const { dhikrIndex, count, setsCompleted, theme } = state;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ dhikrIndex, count, setsCompleted, theme }));
-}
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) Object.assign(state, JSON.parse(raw));
-  } catch (e) { /* ignore */ }
+  } catch (e) { /* ignore corrupt storage */ }
 }
 
-// ── DOM ────────────────────────────────────────────────────
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
 const el = {
-  themeBtn:    document.getElementById('themeBtn'),
-  resetBtn:    document.getElementById('resetBtn'),
-  sequence:    document.getElementById('sequence'),
-  center:      document.getElementById('center'),
-  arabic:      document.getElementById('arabic'),
-  dhikrName:   document.getElementById('dhikrName'),
-  dhikrMeaning:document.getElementById('dhikrMeaning'),
-  count:       document.getElementById('count'),
-  target:      document.getElementById('target'),
-  beads:       document.getElementById('beads'),
-  setsInfo:    document.getElementById('setsInfo'),
+  counts:      document.querySelectorAll('.js-count'),
+  targets:     document.querySelectorAll('.js-target'),
+  rounds:      document.querySelectorAll('.js-round'),
+  remaining:   document.querySelector('.js-remaining'),
+  pctBig:      document.querySelector('.js-pct-big'),
+  pctLine:     document.querySelector('.js-pct-line'),
+  togoLine:    document.querySelector('.js-togo-line'),
+  fill:        document.querySelector('.js-fill'),
+  dots:        document.querySelector('.js-dots'),
+  session:     document.querySelector('.js-session'),
+  incs:        document.querySelectorAll('.js-inc'),
+  decs:        document.querySelectorAll('.js-dec'),
+  resets:      document.querySelectorAll('.js-reset'),
+  goalEdits:   document.querySelectorAll('.js-goal-edit'),
+  themeOpts:   document.querySelectorAll('[data-theme-set]'),
+  themeIcon:   document.getElementById('themeIcon'),
+  dateChip:    document.getElementById('dateChip'),
 };
 
-// ── Bead track ─────────────────────────────────────────────
-let beadEls = [];
-function buildBeads(target) {
-  el.beads.innerHTML = '';
-  beadEls = [];
-  for (let i = 0; i < target; i++) {
-    const b = document.createElement('span');
-    b.className = 'bead';
-    el.beads.appendChild(b);
-    beadEls.push(b);
+let dotEls = [];
+function buildDots() {
+  el.dots.innerHTML = '';
+  dotEls = [];
+  for (let i = 0; i < DOTS; i++) {
+    const d = document.createElement('span');
+    d.className = 'dot';
+    el.dots.appendChild(d);
+    dotEls.push(d);
   }
 }
-function renderBeads() {
-  beadEls.forEach((b, i) => b.classList.toggle('is-filled', i < state.count));
+
+// Cycle math — total count keeps growing, progress wraps each goal.
+function cycleStats() {
+  const g = Math.max(1, state.goal);
+  const n = state.count;
+  const cycleN     = n === 0 ? 0 : ((n - 1) % g) + 1;          // 0..g
+  const round      = n === 0 ? 1 : Math.ceil(n / g);           // 1, 2, 3...
+  const remaining  = Math.max(0, g - cycleN);
+  const pct        = (cycleN / g) * 100;
+  return { cycleN, round, remaining, pct, goal: g };
 }
 
-// ── Sequence chips ─────────────────────────────────────────
-function renderSequence() {
-  el.sequence.innerHTML = '';
-  DHIKRS.forEach((d, i) => {
-    const chip = document.createElement('span');
-    chip.className = 'seq-chip';
-    if      (i < state.dhikrIndex)  { chip.classList.add('is-done');   chip.textContent = `✓ ${d.name}`; }
-    else if (i === state.dhikrIndex){ chip.classList.add('is-active');  chip.textContent = d.name; }
-    else                            {                                   chip.textContent = d.name; }
-    el.sequence.appendChild(chip);
+function render({ pop = false, celebrate = false } = {}) {
+  const { cycleN, round, remaining, pct, goal } = cycleStats();
+
+  el.counts.forEach(c => {
+    c.textContent = String(state.count);
+    if (pop) {
+      c.classList.remove('pop');
+      void c.offsetWidth;
+      c.classList.add('pop');
+    }
+    if (celebrate) {
+      c.classList.remove('celebrate');
+      void c.offsetWidth;
+      c.classList.add('celebrate');
+    }
   });
-}
+  el.targets.forEach(t => (t.textContent = goal));
+  el.rounds.forEach(r => (r.textContent = round));
+  el.remaining.textContent = remaining;
+  el.pctBig.textContent = `${Math.round(pct)}%`;
+  el.pctLine.textContent = `${Math.round(pct)}% complete`;
+  el.togoLine.textContent = `${remaining} to go`;
+  el.fill.style.width = `${pct}%`;
 
-// ── Dhikr info ─────────────────────────────────────────────
-function renderDhikr(animate = false) {
-  const d = DHIKRS[state.dhikrIndex];
-  el.arabic.textContent       = d.arabic;
-  el.dhikrName.textContent    = d.name;
-  el.dhikrMeaning.textContent = d.meaning;
-  el.target.textContent       = d.target;
-  if (animate) {
-    el.center.classList.remove('entering');
-    void el.center.offsetWidth;
-    el.center.classList.add('entering');
+  const filled = Math.min(DOTS, Math.round((cycleN / goal) * DOTS));
+  for (let i = 0; i < DOTS; i++) {
+    dotEls[i].classList.toggle('is-filled', i < filled);
   }
 }
 
-// ── Count display ──────────────────────────────────────────
-function renderCount(pop = false, glow = false) {
-  el.count.textContent = state.count;
-  if (pop || glow) {
-    el.count.classList.remove('pop', 'glow');
-    void el.count.offsetWidth;
-    el.count.classList.add(glow ? 'glow' : 'pop');
-  }
-}
-
-// ── Sets info ──────────────────────────────────────────────
-function renderSets(msg = '') {
-  if (msg) {
-    el.setsInfo.textContent = msg;
-  } else if (state.setsCompleted > 0) {
-    el.setsInfo.textContent =
-      `${state.setsCompleted} set${state.setsCompleted > 1 ? 's' : ''} done`;
-  } else {
-    el.setsInfo.textContent = '';
-  }
-}
-
-// ── Theme ──────────────────────────────────────────────────
 function renderTheme() {
   document.documentElement.setAttribute('data-theme', state.theme);
-  el.themeBtn.textContent = state.theme === 'dark' ? '☾' : '☀';
+  el.themeOpts.forEach(o => {
+    o.classList.toggle('is-active', o.dataset.themeSet === state.theme);
+  });
+  if (el.themeIcon) el.themeIcon.textContent = state.theme === 'dark' ? '☾' : '☀';
 }
 
-// ── Full render ────────────────────────────────────────────
-function renderAll() {
-  renderTheme();
-  renderSequence();
-  renderDhikr();
-  renderCount();
-  buildBeads(DHIKRS[state.dhikrIndex].target);
-  renderBeads();
-  renderSets();
-}
-
-// ── Advance to next dhikr ──────────────────────────────────
-function advanceDhikr() {
-  const nextIndex     = (state.dhikrIndex + 1) % DHIKRS.length;
-  const isSetComplete = nextIndex === 0;
-  if (isSetComplete) state.setsCompleted++;
-
-  state.dhikrIndex    = nextIndex;
-  state.count         = 0;
-  state.transitioning = false;
-
-  renderSequence();
-  renderDhikr(true);
-  renderCount();
-  buildBeads(DHIKRS[state.dhikrIndex].target);
-  renderBeads();
-
-  if (isSetComplete) {
-    renderSets(`MashaAllah — set ${state.setsCompleted} complete ✓`);
-    setTimeout(() => renderSets(), 2800);
-  } else {
-    renderSets();
-  }
+function inc() {
+  state.count += 1;
+  const justCompletedRound = state.count > 0 && state.count % state.goal === 0;
+  render({ pop: true, celebrate: justCompletedRound });
+  if (navigator.vibrate) navigator.vibrate(justCompletedRound ? [12, 40, 12] : 8);
   save();
 }
 
-// ── Count actions ──────────────────────────────────────────
-function increment() {
-  if (state.transitioning) return;
-  state.count++;
-
-  const done = state.count >= DHIKRS[state.dhikrIndex].target;
-  renderCount(true, done);
-  renderBeads();
-  save();
-
-  if (done) {
-    state.transitioning = true;
-    if (navigator.vibrate) navigator.vibrate([12, 50, 20]);
-    setTimeout(advanceDhikr, 820);
-  } else {
-    if (navigator.vibrate) navigator.vibrate(8);
-  }
-}
-
-function decrement() {
-  if (state.transitioning || state.count === 0) return;
-  state.count--;
-  renderCount(true);
-  renderBeads();
+function dec() {
+  if (state.count === 0) return;
+  state.count -= 1;
+  render({ pop: true });
   save();
 }
 
 function reset() {
-  if (!confirm('Reset the full sequence back to Subhanallah?')) return;
-  state.transitioning = false;
-  state.dhikrIndex    = 0;
-  state.count         = 0;
-  renderSequence();
-  renderDhikr(true);
-  renderCount();
-  buildBeads(DHIKRS[0].target);
-  renderBeads();
-  renderSets();
+  if (state.count === 0) return;
+  if (!confirm('Reset the counter to 0?')) return;
+  state.count = 0;
+  render({ pop: true });
   save();
 }
 
-function toggleTheme() {
-  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+function setTheme(t) {
+  state.theme = t;
   renderTheme();
   save();
 }
 
-// ── Bindings ───────────────────────────────────────────────
+function editGoal() {
+  const input = window.prompt('Set your goal (1–9999):', String(state.goal));
+  if (input === null) return; // cancelled
+  const n = parseInt(input.trim(), 10);
+  if (!Number.isFinite(n) || n < 1 || n > 9999) {
+    alert('Please enter a whole number between 1 and 9999.');
+    return;
+  }
+  state.goal = n;
+  render({ pop: true });
+  save();
+}
+
+function setDate() {
+  const d = new Date();
+  if (el.dateChip) el.dateChip.textContent =
+    `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function startSession() {
+  const start = Date.now();
+  const tick = () => {
+    const e = Math.floor((Date.now() - start) / 1000);
+    const h = String(Math.floor(e / 3600)).padStart(2, '0');
+    const m = String(Math.floor((e % 3600) / 60)).padStart(2, '0');
+    const s = String(e % 60).padStart(2, '0');
+    if (el.session) el.session.textContent = `session · ${h}:${m}:${s}`;
+  };
+  tick();
+  setInterval(tick, 1000);
+}
+
 function bind() {
-  // Tap anywhere that isn't a button = increment
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('button')) return;
-    increment();
-  });
+  el.incs.forEach(b => b.addEventListener('click', inc));
+  el.decs.forEach(b => b.addEventListener('click', dec));
+  el.resets.forEach(b => b.addEventListener('click', reset));
+  el.goalEdits.forEach(g => g.addEventListener('click', editGoal));
 
-  el.resetBtn.addEventListener('click', reset);
-  el.themeBtn.addEventListener('click', toggleTheme);
+  el.themeOpts.forEach(o =>
+    o.addEventListener('click', () => setTheme(o.dataset.themeSet)));
 
-  // Keyboard
+  if (el.themeIcon) {
+    el.themeIcon.addEventListener('click',
+      () => setTheme(state.theme === 'light' ? 'dark' : 'light'));
+  }
+
   document.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    const onBtn = e.target.tagName === 'BUTTON';
+    const onButton = e.target.tagName === 'BUTTON';
     if (e.code === 'ArrowUp' || e.key === '+' || e.key === '=' ||
-        (e.code === 'Space' && !onBtn)) {
-      e.preventDefault(); increment();
-    } else if (e.code === 'ArrowDown' || e.key === '-' ||
-               e.key === 'u' || e.key === 'U') {
-      e.preventDefault(); decrement();
+        (e.code === 'Space' && !onButton)) {
+      e.preventDefault(); inc();
+    } else if (e.code === 'ArrowDown' || e.key === '-' || e.key === '_') {
+      e.preventDefault(); dec();
     } else if (e.key === 'r' || e.key === 'R') {
       reset();
+    } else if (e.key === 'g' || e.key === 'G') {
+      editGoal();
     }
   });
 
-  // Prevent double-tap zoom on mobile
-  document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
+  // Belt-and-suspenders zoom prevention on iOS — block pinch and double-tap zoom.
+  document.addEventListener('gesturestart', (e) => e.preventDefault());
   let lastTouch = 0;
   document.addEventListener('touchend', (e) => {
     const now = Date.now();
-    if (now - lastTouch < 300) e.preventDefault();
+    if (now - lastTouch <= 300) e.preventDefault();
     lastTouch = now;
   }, { passive: false });
 }
 
-// ── Init ───────────────────────────────────────────────────
 load();
-renderAll();
+buildDots();
+renderTheme();
+render();
+setDate();
+startSession();
 bind();

@@ -1,52 +1,119 @@
 <!doctype html>
 <html lang="en" data-theme="dark">
 <head>
-  <meta charset="utf-8">
-  <title>Dhiker · Tasbih Counter</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
-  <meta name="theme-color" content="#16140f">
+  <meta charset="utf-8" />
+  <title>Dhiker · counter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#16140f" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23b35a30'/%3E%3Ctext x='50%25' y='54%25' text-anchor='middle' dominant-baseline='middle' font-family='IBM Plex Mono,monospace' font-weight='600' font-size='36' fill='white'%3ED%3C/text%3E%3C/svg%3E">
 </head>
 <body>
-  <div class="app" id="app">
+  <div class="app">
 
     <header class="topbar">
       <div class="brand">
-        <div class="brand-logo">D</div>
-        <span class="brand-name">Dhiker</span>
+        <div class="brand__logo">D</div>
+        <span class="brand__name">Dhiker</span>
+        <span class="brand__sub">· counter</span>
       </div>
-      <div class="topbar-right">
-        <button class="pill-btn" id="themeBtn" aria-label="Toggle theme">☾</button>
-        <button class="pill-btn" id="resetBtn" aria-label="Reset">↺ Reset</button>
+
+      <div class="topbar__right">
+        <div class="date-chip" id="dateChip">—</div>
+
+        <div class="theme-pill" role="tablist" aria-label="Theme">
+          <button class="theme-pill__opt" data-theme-set="light" role="tab">light</button>
+          <button class="theme-pill__opt" data-theme-set="dark"  role="tab">dark</button>
+        </div>
+
+        <button class="theme-icon" id="themeIcon" aria-label="Toggle theme">☾</button>
       </div>
     </header>
 
     <main class="main">
 
-      <div class="sequence" id="sequence"></div>
+      <section class="counter-card">
+        <div class="counter-card__head">
+          <span class="label">Current count</span>
+          <span class="head-meta">
+            <span class="round-chip">Round <span class="js-round">1</span></span>
+            <button class="goal-text js-goal-edit" type="button" aria-label="Set goal">
+              goal · <span class="js-target">100</span>
+              <span class="goal-text__pencil" aria-hidden="true">✎</span>
+            </button>
+          </span>
+        </div>
 
-      <div class="center" id="center">
-        <div class="arabic" id="arabic" dir="rtl" lang="ar"></div>
-        <div class="dhikr-name" id="dhikrName"></div>
-        <div class="dhikr-meaning" id="dhikrMeaning"></div>
-        <div class="count" id="count">0</div>
-        <div class="fraction">/ <span id="target">33</span></div>
-      </div>
+        <div class="bignum js-count" aria-live="polite">0</div>
 
-      <div class="beads" id="beads"></div>
+        <div class="dots js-dots" aria-hidden="true"></div>
 
+        <div class="progress-bar">
+          <div class="progress-bar__bar">
+            <div class="progress-bar__fill js-fill"></div>
+          </div>
+          <div class="progress-bar__labels">
+            <span class="js-pct-line">0% complete</span>
+            <span class="js-togo-line">100 to go</span>
+          </div>
+        </div>
+
+        <div class="counter-card__controls">
+          <button class="reset-pill js-reset">
+            <span class="reset-pill__icon">↺</span> Reset
+          </button>
+          <div class="counter-card__buttons">
+            <button class="icon-btn js-dec" aria-label="Decrement">−</button>
+            <button class="icon-btn icon-btn--accent js-inc" aria-label="Increment">
+              <span class="plus">+</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="stats">
+        <div class="stat-card">
+          <div class="stat-card__label">Cycle progress</div>
+          <div class="stat-card__value js-pct-big">0%</div>
+          <div class="stat-card__sub">of <span class="js-target">100</span> per round</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">Remaining</div>
+          <div class="stat-card__value js-remaining">100</div>
+          <div class="stat-card__sub">until next round</div>
+        </div>
+        <div class="hint">
+          Tap <kbd>+</kbd> to count up, <kbd>−</kbd> to count down, and <kbd>↺</kbd> to reset.
+          Click <kbd>goal</kbd> to set a target — the counter keeps climbing and the round loops automatically.
+        </div>
+      </aside>
     </main>
 
+    <div class="mobile-controls-wrap">
+      <div class="mobile-controls">
+        <button class="icon-btn js-dec" aria-label="Decrement">−</button>
+        <button class="icon-btn icon-btn--accent icon-btn--big js-inc" aria-label="Increment">
+          <span class="plus">+</span>
+        </button>
+        <button class="icon-btn js-reset" aria-label="Reset">↺</button>
+      </div>
+      <div class="mobile-labels">
+        <span>Minus</span>
+        <span>Add</span>
+        <span>Reset</span>
+      </div>
+    </div>
+
     <footer class="footer">
-      <span class="tap-hint">Tap anywhere to count</span>
-      <span class="sets-info" id="setsInfo"></span>
+      <span>v1.0 · local only</span>
+      <span class="session js-session">session · 00:00:00</span>
     </footer>
 
   </div>
+
   <script src="script.js"></script>
 </body>
 </html>
