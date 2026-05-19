@@ -1,7 +1,28 @@
 /* =============================================================
-   Dhiker — full-screen immersive tasbih counter
-   Background images + dark overlay, entire screen tappable.
+   Dhiker — clean tasbih counter, no images, solid palette
    ============================================================= */
+
+:root {
+  --bg:          #16140f;
+  --surface:     #1e1c17;
+  --border:      rgba(255, 245, 225, 0.10);
+  --text:        #f4f0e6;
+  --text-dim:    rgba(244, 240, 230, 0.55);
+  --text-faint:  rgba(244, 240, 230, 0.32);
+  --accent:      oklch(0.72 0.13 50);
+  --accent-soft: oklch(0.72 0.13 50 / 0.14);
+}
+
+[data-theme="light"] {
+  --bg:          #faf8f4;
+  --surface:     #ffffff;
+  --border:      rgba(40, 30, 20, 0.10);
+  --text:        #16140f;
+  --text-dim:    rgba(22, 20, 15, 0.55);
+  --text-faint:  rgba(22, 20, 15, 0.30);
+  --accent:      oklch(0.58 0.14 45);
+  --accent-soft: oklch(0.58 0.14 45 / 0.12);
+}
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -16,13 +37,16 @@ html, body {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
+  touch-action: pan-x pan-y;
 }
 
 body {
   font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background: #0a0a12;
+  transition: background-color 0.35s ease, color 0.35s ease;
+  cursor: pointer; /* whole page is tappable */
 }
 
 button {
@@ -37,63 +61,27 @@ button {
   user-select: none;
 }
 
-/* ── Background crossfade layers ─────────────────────────── */
-.bg-layer {
-  position: fixed;
-  inset: 0;
-  background: #0a0a12 center / cover no-repeat;
-  z-index: 0;
-  opacity: 0;
-  transition: opacity 1.4s ease;
-}
-.bg-layer.active { opacity: 1; }
-
-/* ── Dark overlay ─────────────────────────────────────────── */
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  z-index: 1;
-  transition: background 0.5s ease;
-  pointer-events: none;
-}
-[data-theme="light"] .overlay { background: rgba(0, 0, 0, 0.58); }
-
-/* ── Full-screen tap zone ─────────────────────────────────── */
-.tap-zone {
-  position: fixed;
-  inset: 0;
-  z-index: 2;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  outline: none;
-}
-.tap-zone:focus-visible {
-  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.25);
-}
-
-/* ── UI container (pointer-events: none so clicks fall through) */
-.ui {
-  position: fixed;
-  inset: 0;
-  z-index: 3;
+/* ── App shell ───────────────────────────────────────────── */
+.app {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  pointer-events: none;
+  padding: clamp(12px,2.8vh,22px) clamp(16px,4vw,32px);
+  max-width: 680px;
+  margin: 0 auto;
+  width: 100%;
 }
-
-/* Re-enable interaction only on actual controls */
-.ui button { pointer-events: all; }
 
 /* ── Topbar ──────────────────────────────────────────────── */
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: clamp(12px, 3vh, 22px) clamp(14px, 4vw, 28px);
   flex-shrink: 0;
   gap: 8px;
+  margin-bottom: clamp(8px,2vh,18px);
 }
 
 .brand {
@@ -102,43 +90,41 @@ button {
   gap: 9px;
 }
 .brand-logo {
-  width: 30px; height: 30px;
+  width: 28px; height: 28px;
   border-radius: 8px;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.2);
+  background: var(--accent);
   color: #fff;
   font-family: 'IBM Plex Mono', monospace;
-  font-weight: 600; font-size: 14px;
+  font-weight: 600; font-size: 13px;
   display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
 .brand-name {
   font-size: 15px; font-weight: 600;
-  color: rgba(255,255,255,0.9);
   letter-spacing: -0.2px;
 }
 
 .topbar-right {
   display: flex; align-items: center; gap: 8px;
 }
-.ctrl-btn {
-  height: 34px;
+.pill-btn {
+  height: 32px;
   padding: 0 14px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.2);
-  background: rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.85);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
   font-size: 13px; font-weight: 500;
   display: inline-flex; align-items: center; gap: 6px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition: background 0.2s, border-color 0.2s;
+  transition: color 0.18s, border-color 0.18s, background 0.18s;
 }
-.ctrl-btn:hover {
-  background: rgba(255,255,255,0.16);
-  border-color: rgba(255,255,255,0.35);
+.pill-btn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 
-/* ── Main content area ───────────────────────────────────── */
+/* ── Main content ────────────────────────────────────────── */
 .main {
   flex: 1 1 auto;
   min-height: 0;
@@ -146,15 +132,14 @@ button {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(14px, 3vh, 26px);
-  padding: 0 clamp(16px, 5vw, 40px);
+  gap: clamp(14px, 3vh, 28px);
   overflow: hidden;
 }
 
 /* ── Sequence chips ─────────────────────────────────────── */
 .sequence {
   display: flex;
-  gap: 8px;
+  gap: 7px;
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -162,95 +147,92 @@ button {
   font-size: 11px; font-weight: 500;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  padding: 5px 13px;
+  padding: 4px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.3);
-  transition: all 0.35s ease;
+  border: 1px solid var(--border);
+  color: var(--text-faint);
+  transition: all 0.3s ease;
   white-space: nowrap;
+  user-select: none;
 }
 .seq-chip.is-done {
-  color: rgba(255,255,255,0.5);
-  border-color: rgba(255,255,255,0.18);
+  color: var(--text-dim);
 }
 .seq-chip.is-active {
-  background: rgba(255,255,255,0.14);
-  border-color: rgba(255,255,255,0.55);
-  color: #ffffff;
-  box-shadow: 0 0 16px rgba(255,255,255,0.08);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* ── Centre block ────────────────────────────────────────── */
-.center-block {
+.center {
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(4px, 1vh, 8px);
+  gap: clamp(3px, 0.7vh, 7px);
 }
-.center-block.entering { animation: content-in 0.45s cubic-bezier(.22,1,.36,1); }
+.center.entering {
+  animation: content-in 0.4s cubic-bezier(.22, 1, .36, 1);
+}
 @keyframes content-in {
-  from { opacity: 0; transform: translateY(18px); }
+  from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0);    }
 }
 
-.dhikr-arabic {
+.arabic {
   font-family: 'Amiri', 'Traditional Arabic', serif;
-  font-size: clamp(28px, 7vw, 60px);
-  color: rgba(255,255,255,0.92);
-  line-height: 1.25;
-  letter-spacing: 0.5px;
+  font-size: clamp(26px, 6.5vw, 58px);
+  color: var(--text);
+  line-height: 1.3;
+  user-select: none;
 }
 .dhikr-name {
-  font-size: clamp(11px, 2.5vw, 15px);
+  font-size: clamp(10px, 2.2vw, 13px);
   font-weight: 600;
   letter-spacing: 2.5px;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.6);
+  color: var(--text-dim);
   margin-top: 2px;
+  user-select: none;
 }
 .dhikr-meaning {
-  font-size: clamp(11px, 2.2vw, 14px);
-  color: rgba(255,255,255,0.38);
+  font-size: clamp(11px, 2vw, 13px);
+  color: var(--text-faint);
   font-style: italic;
+  user-select: none;
 }
 
-.count-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  margin-top: clamp(4px, 1vh, 10px);
-}
 .count {
   font-family: 'IBM Plex Mono', 'SF Mono', ui-monospace, monospace;
   font-weight: 500;
-  font-size: clamp(88px, 22vw, 200px);
+  font-size: clamp(88px, 22vw, 196px);
   line-height: 1;
   letter-spacing: -4px;
-  color: #ffffff;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
   user-select: none;
-  transition: color 0.3s;
+  margin-top: clamp(4px, 1vh, 10px);
 }
-.count.pop      { animation: pop      0.22s ease; }
-.count.glow     { animation: glow     0.75s ease; }
+.count.pop  { animation: pop  0.22s ease; }
+.count.glow { animation: glow 0.75s ease; }
 
 @keyframes pop {
-  0%   { transform: scale(0.93); opacity: 0.55; }
-  100% { transform: scale(1);    opacity: 1;    }
+  0%   { transform: scale(0.93); opacity: 0.5; }
+  100% { transform: scale(1);    opacity: 1;   }
 }
 @keyframes glow {
-  0%   { transform: scale(1);    color: #fff;   text-shadow: none; }
-  35%  { transform: scale(1.08); color: #ffe4a0; text-shadow: 0 0 48px rgba(255,220,130,0.7); }
-  100% { transform: scale(1);    color: #fff;   text-shadow: none; }
+  0%   { transform: scale(1);    color: var(--text);   }
+  35%  { transform: scale(1.08); color: var(--accent);
+         text-shadow: 0 0 40px oklch(0.72 0.13 50 / 0.5); }
+  100% { transform: scale(1);    color: var(--text); text-shadow: none; }
 }
 
-.count-frac {
+.fraction {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: clamp(16px, 4vw, 26px);
-  color: rgba(255,255,255,0.35);
-  display: flex; align-items: center; gap: 4px;
-  padding-bottom: clamp(8px, 2vw, 16px);
+  font-size: clamp(15px, 3.5vw, 22px);
+  color: var(--text-faint);
+  user-select: none;
 }
 
 /* ── Bead track ─────────────────────────────────────────── */
@@ -259,17 +241,18 @@ button {
   flex-wrap: wrap;
   justify-content: center;
   gap: 5px;
-  max-width: clamp(260px, 70vw, 420px);
+  max-width: clamp(240px, 70vw, 400px);
 }
 .bead {
   width: 8px; height: 8px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.15);
+  background: var(--border);
   transition: background 0.18s ease, transform 0.18s ease;
   flex-shrink: 0;
+  user-select: none;
 }
 .bead.is-filled {
-  background: rgba(255,255,255,0.88);
+  background: var(--accent);
   transform: scale(1.15);
 }
 
@@ -278,32 +261,32 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: clamp(10px, 2.5vh, 18px) clamp(14px, 4vw, 28px);
   flex-shrink: 0;
+  margin-top: clamp(8px, 2vh, 16px);
   gap: 8px;
 }
 .tap-hint {
   font-size: 12px;
-  color: rgba(255,255,255,0.3);
-  letter-spacing: 0.3px;
+  color: var(--text-faint);
+  letter-spacing: 0.2px;
+  user-select: none;
 }
 .sets-info {
   font-size: 12px;
   font-family: 'IBM Plex Mono', monospace;
-  color: rgba(255,255,255,0.5);
+  color: var(--text-dim);
+  user-select: none;
 }
 
-/* ── Responsive tweaks ───────────────────────────────────── */
-@media (max-width: 360px) {
-  .seq-chip  { font-size: 10px; padding: 4px 10px; }
-  .beads     { gap: 4px; }
-  .bead      { width: 7px; height: 7px; }
-}
-@media (max-height: 600px) {
-  .main { gap: 10px; }
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-height: 580px) {
   .beads { display: none; }
+  .main  { gap: 10px; }
 }
-@media (min-width: 900px) {
-  .count { font-size: clamp(140px, 16vw, 220px); }
-  .dhikr-arabic { font-size: clamp(44px, 5vw, 72px); }
+@media (max-width: 340px) {
+  .seq-chip { font-size: 10px; padding: 3px 9px; }
+}
+@media (min-width: 700px) {
+  .count { font-size: clamp(130px, 18vw, 210px); }
+  .arabic { font-size: clamp(40px, 5.5vw, 68px); }
 }

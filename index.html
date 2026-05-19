@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>Dhiker · Tasbih Counter</title>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#16140f">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,19 +12,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23b35a30'/%3E%3Ctext x='50%25' y='54%25' text-anchor='middle' dominant-baseline='middle' font-family='IBM Plex Mono,monospace' font-weight='600' font-size='36' fill='white'%3ED%3C/text%3E%3C/svg%3E">
 </head>
 <body>
-
-  <!-- Background crossfade layers -->
-  <div class="bg-layer" id="bgA"></div>
-  <div class="bg-layer" id="bgB"></div>
-
-  <!-- Overlay (opacity controlled by theme) -->
-  <div class="overlay" id="overlay"></div>
-
-  <!-- Full-screen tap target -->
-  <button class="tap-zone" id="tapZone" aria-label="Count dhikr"></button>
-
-  <!-- All visible UI sits on top, pointer-events disabled except on buttons -->
-  <div class="ui">
+  <div class="app" id="app">
 
     <header class="topbar">
       <div class="brand">
@@ -32,32 +20,25 @@
         <span class="brand-name">Dhiker</span>
       </div>
       <div class="topbar-right">
-        <button class="ctrl-btn" id="themeBtn" aria-label="Toggle theme">☾</button>
-        <button class="ctrl-btn" id="resetBtn" aria-label="Reset sequence">↺ Reset</button>
+        <button class="pill-btn" id="themeBtn" aria-label="Toggle theme">☾</button>
+        <button class="pill-btn" id="resetBtn" aria-label="Reset">↺ Reset</button>
       </div>
     </header>
 
     <main class="main">
-      <!-- Sequence chips: ✓ Subhanallah  [ Alhamdulillah ]  Allahu Akbar -->
+
       <div class="sequence" id="sequence"></div>
 
-      <!-- Centre content -->
-      <div class="center-block" id="centerBlock">
-        <div class="dhikr-arabic" id="dhikrArabic" dir="rtl" lang="ar"></div>
-        <div class="dhikr-name"    id="dhikrName"></div>
+      <div class="center" id="center">
+        <div class="arabic" id="arabic" dir="rtl" lang="ar"></div>
+        <div class="dhikr-name" id="dhikrName"></div>
         <div class="dhikr-meaning" id="dhikrMeaning"></div>
-
-        <div class="count-row">
-          <span class="count" id="count">0</span>
-          <span class="count-frac">
-            <span class="frac-sep">/</span>
-            <span class="frac-target" id="countTarget">33</span>
-          </span>
-        </div>
+        <div class="count" id="count">0</div>
+        <div class="fraction">/ <span id="target">33</span></div>
       </div>
 
-      <!-- Tasbih bead track -->
       <div class="beads" id="beads"></div>
+
     </main>
 
     <footer class="footer">
@@ -66,7 +47,6 @@
     </footer>
 
   </div>
-
   <script src="script.js"></script>
 </body>
 </html>
