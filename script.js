@@ -176,9 +176,18 @@ function startSession() {
 }
 
 function bind() {
-  el.incs.forEach(b   => b.addEventListener('click', inc));
-  el.decs.forEach(b   => b.addEventListener('click', dec));
-  el.resets.forEach(b => b.addEventListener('click', reset));
+  // touchstart = zero-delay on mobile; click = fallback for mouse/keyboard.
+  // preventDefault on touchstart suppresses the later ghost click so fn() runs once.
+  function fastBtn(nodes, fn) {
+    nodes.forEach(b => {
+      b.addEventListener('touchstart', (e) => { e.preventDefault(); fn(); }, { passive: false });
+      b.addEventListener('click', fn);
+    });
+  }
+
+  fastBtn(el.incs,   inc);
+  fastBtn(el.decs,   dec);
+  fastBtn(el.resets, reset);
 
   el.themeOpts.forEach(o =>
     o.addEventListener('click', () => setTheme(o.dataset.themeSet)));
