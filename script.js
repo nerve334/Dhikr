@@ -205,7 +205,7 @@ function bind() {
   let lastTouch = 0;
   document.addEventListener('touchend', (e) => {
     const now = Date.now();
-    if (now - lastTouch <= 300) e.preventDefault();
+    if (now - lastTouch <= 300 && !e.target.closest('button')) e.preventDefault();
     lastTouch = now;
   }, { passive: false });
 }
