@@ -90,8 +90,29 @@ kbd {
   margin: 0 1px;
 }
 
+/* =============== BACKGROUND LAYERS =============== */
+.bg-layer {
+  position: fixed;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 1s ease;
+  z-index: 0;
+}
+.bg-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.62);
+  z-index: 1;
+  pointer-events: none;
+}
+
 /* =============== APP SHELL (mobile-first) =============== */
 .app {
+  position: relative;
+  z-index: 2;
   height: 100dvh;
   max-height: 100dvh;
   overflow: hidden;

@@ -4,6 +4,23 @@ const DHIKRS = [
   { name: 'Allahu Akbar',  target: 34 },
 ];
 
+// One random image per dhikr, chosen fresh each session
+const SESSION_IMGS = DHIKRS.map(() =>
+  `https://picsum.photos/seed/${Math.floor(Math.random() * 1000) + 1}/1600/900`
+);
+
+const bgEls    = [null, null]; // filled after DOM ready
+let   activeBg = 0;
+function setBg(dhikrIndex) {
+  if (!bgEls[0]) return;
+  const url  = SESSION_IMGS[dhikrIndex];
+  const next = 1 - activeBg;
+  bgEls[next].style.backgroundImage = `url('${url}')`;
+  bgEls[next].style.opacity = '1';
+  bgEls[activeBg].style.opacity = '0';
+  activeBg = next;
+}
+
 const STORAGE_KEY = 'dhiker_v3';
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -115,6 +132,7 @@ function advanceDhikr() {
   state.dhikrIndex    = nextIndex;
   state.count         = 0;
   state.transitioning = false;
+  setBg(nextIndex);
   buildDots(DHIKRS[nextIndex].target);
   render({ pop: true, entering: true });
   save();
@@ -145,6 +163,7 @@ function reset() {
   state.count         = 0;
   state.setsCompleted = 0;
   state.transitioning = false;
+  setBg(0);
   buildDots(DHIKRS[0].target);
   render({ pop: true });
   save();
@@ -220,6 +239,9 @@ function bind() {
 }
 
 load();
+bgEls[0] = document.getElementById('bgA');
+bgEls[1] = document.getElementById('bgB');
+setBg(state.dhikrIndex);
 buildDots(DHIKRS[state.dhikrIndex].target);
 renderTheme();
 render();
