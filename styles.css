@@ -415,10 +415,10 @@ kbd {
 .icon-btn--accent:hover { background: var(--accent); }
 .icon-btn--accent .plus { font-size: 30px; font-weight: 300; line-height: 1; }
 .icon-btn--big {
-  width: clamp(72px, 11vh, 88px);
-  height: clamp(72px, 11vh, 88px);
+  width: clamp(88px, 14vh, 108px);
+  height: clamp(88px, 14vh, 108px);
 }
-.icon-btn--big .plus { font-size: 36px; }
+.icon-btn--big .plus { font-size: 42px; }
 
 /* =============== STATS SIDEBAR (desktop only) =============== */
 .stats { display: none; }
@@ -571,7 +571,7 @@ kbd {
 /* =============== Very narrow screens =============== */
 @media (max-width: 360px) {
   .brand__sub { display: none; }
-  .mobile-labels span:nth-child(2) { width: 72px; }
-  .icon-btn--big { width: 72px; height: 72px; }
-  .icon-btn--big .plus { font-size: 32px; }
+  .mobile-labels span:nth-child(2) { width: 88px; }
+  .icon-btn--big { width: 88px; height: 88px; }
+  .icon-btn--big .plus { font-size: 38px; }
 }
