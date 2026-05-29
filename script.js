@@ -1,19 +1,31 @@
 const DHIKRS = [
-  { name: 'Subhanallah',   target: 33 },
+  { name: 'SubhanAllah',   target: 33 },
   { name: 'Alhamdulillah', target: 33 },
   { name: 'Allahu Akbar',  target: 34 },
 ];
 
-// One random image per dhikr, chosen fresh each session
-const SESSION_IMGS = DHIKRS.map(() =>
+const STORAGE_KEY = 'dhiker_v4';
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+const state = {
+  dhikrIndex:    0,
+  count:         0,
+  setsCompleted: 0,
+  mode:          'sequence', // 'sequence' | 'free'
+  theme:         'dark',
+  transitioning: false,
+};
+
+// One random Picsum image per dhikr + one for free mode, chosen fresh each session
+const SESSION_IMGS = [...DHIKRS, {}].map(() =>
   `https://picsum.photos/seed/${Math.floor(Math.random() * 1000) + 1}/1600/900`
 );
 
-const bgEls    = [null, null]; // filled after DOM ready
+const bgEls    = [null, null];
 let   activeBg = 0;
-function setBg(dhikrIndex) {
+function setBg(index) {
   if (!bgEls[0]) return;
-  const url  = SESSION_IMGS[dhikrIndex];
+  const url  = SESSION_IMGS[index] || SESSION_IMGS[0];
   const next = 1 - activeBg;
   bgEls[next].style.backgroundImage = `url('${url}')`;
   bgEls[next].style.opacity = '1';
@@ -21,33 +33,23 @@ function setBg(dhikrIndex) {
   activeBg = next;
 }
 
-const STORAGE_KEY = 'dhiker_v3';
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-const state = {
-  dhikrIndex:    0,
-  count:         0,
-  setsCompleted: 0,
-  theme:         'dark',
-  transitioning: false,
-};
-
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const { dhikrIndex, count, setsCompleted, theme } = JSON.parse(raw);
+      const { dhikrIndex, count, setsCompleted, mode, theme } = JSON.parse(raw);
       if (dhikrIndex    !== undefined) state.dhikrIndex    = dhikrIndex;
       if (count         !== undefined) state.count         = count;
       if (setsCompleted !== undefined) state.setsCompleted = setsCompleted;
+      if (mode          !== undefined) state.mode          = mode;
       if (theme         !== undefined) state.theme         = theme;
     }
   } catch (e) { /* ignore corrupt storage */ }
 }
 
 function save() {
-  const { dhikrIndex, count, setsCompleted, theme } = state;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ dhikrIndex, count, setsCompleted, theme }));
+  const { dhikrIndex, count, setsCompleted, mode, theme } = state;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ dhikrIndex, count, setsCompleted, mode, theme }));
 }
 
 const el = {
@@ -63,7 +65,7 @@ const el = {
   dots:       document.querySelector('.js-dots'),
   session:    document.querySelector('.js-session'),
   incs:       document.querySelectorAll('.js-inc'),
-  decs:       document.querySelectorAll('.js-dec'),
+  modes:      document.querySelectorAll('.js-mode'),
   resets:     document.querySelectorAll('.js-reset'),
   themeOpts:  document.querySelectorAll('[data-theme-set]'),
   themeIcon:  document.getElementById('themeIcon'),
@@ -83,6 +85,36 @@ function buildDots(target) {
 }
 
 function render({ pop = false, celebrate = false, entering = false } = {}) {
+  const isFree = state.mode === 'free';
+
+  // Mode button icon: shows what you'd switch TO
+  el.modes.forEach(b => { b.textContent = isFree ? '≡' : '∞'; });
+
+  if (isFree) {
+    el.dhikrLabel.textContent = '∞';
+    if (entering) {
+      el.dhikrLabel.classList.remove('entering');
+      void el.dhikrLabel.offsetWidth;
+      el.dhikrLabel.classList.add('entering');
+    }
+    el.phaseChip.textContent = 'Free Mode';
+    el.setsChip.textContent  = '';
+    el.bignum.textContent    = String(state.count);
+    if (pop) {
+      el.bignum.classList.remove('pop', 'celebrate');
+      void el.bignum.offsetWidth;
+      el.bignum.classList.add('pop');
+    }
+    if (el.phaseVal)  el.phaseVal.textContent  = '∞';
+    if (el.remaining) el.remaining.textContent = '—';
+    el.pctLine.textContent  = String(state.count);
+    el.togoLine.textContent = '∞';
+    el.fill.style.width     = '0%';
+    dotEls.forEach(dot => dot.classList.remove('is-filled'));
+    return;
+  }
+
+  // ── Sequence mode ──────────────────────────────────────────
   const d         = DHIKRS[state.dhikrIndex];
   const remaining = d.target - state.count;
   const pct       = (state.count / d.target) * 100;
@@ -141,6 +173,14 @@ function advanceDhikr() {
 function inc() {
   if (state.transitioning) return;
   state.count++;
+
+  if (state.mode === 'free') {
+    render({ pop: true });
+    if (navigator.vibrate) navigator.vibrate(8);
+    save();
+    return;
+  }
+
   const done = state.count >= DHIKRS[state.dhikrIndex].target;
   render({ pop: !done, celebrate: done });
   if (navigator.vibrate) navigator.vibrate(done ? [12, 50, 20] : 8);
@@ -151,10 +191,19 @@ function inc() {
   }
 }
 
-function dec() {
-  if (state.transitioning || state.count === 0) return;
-  state.count--;
-  render({ pop: true });
+function toggleMode() {
+  state.mode          = state.mode === 'sequence' ? 'free' : 'sequence';
+  state.dhikrIndex    = 0;
+  state.count         = 0;
+  state.transitioning = false;
+  if (state.mode === 'free') {
+    buildDots(0);
+    setBg(DHIKRS.length); // free-mode image slot
+  } else {
+    buildDots(DHIKRS[0].target);
+    setBg(0);
+  }
+  render({ entering: true });
   save();
 }
 
@@ -163,8 +212,8 @@ function reset() {
   state.count         = 0;
   state.setsCompleted = 0;
   state.transitioning = false;
-  setBg(0);
-  buildDots(DHIKRS[0].target);
+  buildDots(state.mode === 'sequence' ? DHIKRS[0].target : 0);
+  setBg(state.mode === 'sequence' ? 0 : DHIKRS.length);
   render({ pop: true });
   save();
 }
@@ -195,8 +244,6 @@ function startSession() {
 }
 
 function bind() {
-  // touchstart = zero-delay on mobile; click = fallback for mouse/keyboard.
-  // preventDefault on touchstart suppresses the later ghost click so fn() runs once.
   function fastBtn(nodes, fn) {
     nodes.forEach(b => {
       b.addEventListener('touchstart', (e) => { e.preventDefault(); fn(); }, { passive: false });
@@ -205,7 +252,7 @@ function bind() {
   }
 
   fastBtn(el.incs,   inc);
-  fastBtn(el.decs,   dec);
+  fastBtn(el.modes,  toggleMode);
   fastBtn(el.resets, reset);
 
   el.themeOpts.forEach(o =>
@@ -222,8 +269,8 @@ function bind() {
     if (e.code === 'ArrowUp' || e.key === '+' || e.key === '=' ||
         (e.code === 'Space' && !onButton)) {
       e.preventDefault(); inc();
-    } else if (e.code === 'ArrowDown' || e.key === '-' || e.key === '_') {
-      e.preventDefault(); dec();
+    } else if (e.key === 'm' || e.key === 'M') {
+      toggleMode();
     } else if (e.key === 'r' || e.key === 'R') {
       reset();
     }
@@ -241,8 +288,8 @@ function bind() {
 load();
 bgEls[0] = document.getElementById('bgA');
 bgEls[1] = document.getElementById('bgB');
-setBg(state.dhikrIndex);
-buildDots(DHIKRS[state.dhikrIndex].target);
+setBg(state.mode === 'free' ? DHIKRS.length : state.dhikrIndex);
+buildDots(state.mode === 'sequence' ? DHIKRS[state.dhikrIndex].target : 0);
 renderTheme();
 render();
 setDate();
