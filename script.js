@@ -16,31 +16,6 @@ const state = {
   transitioning: false,
 };
 
-// ── Haptic feedback ────────────────────────────────────────
-// Android: Vibration API (reliable). iOS: inaudible AudioContext pulse
-// — can trigger the taptic engine on devices that support it.
-let _audioCtx = null;
-function haptic(style = 'light') {
-  if (navigator.vibrate) {
-    navigator.vibrate(style === 'heavy' ? [12, 40, 12] : 11);
-    return;
-  }
-  try {
-    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = _audioCtx.createOscillator();
-    const g   = _audioCtx.createGain();
-    osc.connect(g);
-    g.connect(_audioCtx.destination);
-    osc.type            = 'sine';
-    osc.frequency.value = style === 'heavy' ? 150 : 230;
-    g.gain.setValueAtTime(0.001, _audioCtx.currentTime);
-    g.gain.linearRampToValueAtTime(0.04, _audioCtx.currentTime + 0.004);
-    g.gain.exponentialRampToValueAtTime(0.0001, _audioCtx.currentTime + 0.025);
-    osc.start(_audioCtx.currentTime);
-    osc.stop(_audioCtx.currentTime + 0.03);
-  } catch (_) {}
-}
-
 // One random Picsum image per dhikr + one for free mode, chosen fresh each session
 const SESSION_IMGS = [...DHIKRS, {}].map(() =>
   `https://picsum.photos/seed/${Math.floor(Math.random() * 1000) + 1}/1600/900`
@@ -184,6 +159,7 @@ function renderTheme() {
 }
 
 function advanceDhikr() {
+  if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
   const nextIndex = (state.dhikrIndex + 1) % DHIKRS.length;
   if (nextIndex === 0) state.setsCompleted++;
   state.dhikrIndex    = nextIndex;
@@ -201,14 +177,12 @@ function inc() {
 
   if (state.mode === 'free') {
     render({ pop: true });
-    haptic('light');
     save();
     return;
   }
 
   const done = state.count >= DHIKRS[state.dhikrIndex].target;
   render({ pop: !done, celebrate: done });
-  haptic(done ? 'heavy' : 'light');
   save();
   if (done) {
     state.transitioning = true;
@@ -217,7 +191,6 @@ function inc() {
 }
 
 function toggleMode() {
-  haptic('light');
   state.mode          = state.mode === 'sequence' ? 'free' : 'sequence';
   state.dhikrIndex    = 0;
   state.count         = 0;
@@ -234,7 +207,6 @@ function toggleMode() {
 }
 
 function reset() {
-  haptic('light');
   state.dhikrIndex    = 0;
   state.count         = 0;
   state.setsCompleted = 0;
@@ -273,7 +245,11 @@ function startSession() {
 function bind() {
   function fastBtn(nodes, fn) {
     nodes.forEach(b => {
-      b.addEventListener('touchstart', (e) => { e.preventDefault(); fn(); }, { passive: false });
+      b.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (navigator.vibrate) navigator.vibrate(45);
+        fn();
+      }, { passive: false });
       b.addEventListener('click', fn);
     });
   }
